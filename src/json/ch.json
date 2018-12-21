@@ -1,0 +1,93 @@
+{
+  "imageList": {
+    "title": "影像列表"
+  },
+  "rightBtn":{
+    "options": {
+      "device":"设备",
+      "scan": "扫描",
+      "import": "导入",
+      "mobile":"移动扫描",
+      "thumbnail": "缩略图",
+      "ocr": "ocr识别",
+      "upload": "上传",
+      "submit": "提交",
+      "print": "打印"
+    }
+  },
+  "settings":{
+    "functionSet": {
+      "title":"功能设置",
+      "functionType": {
+        "selected": {
+          "title": "可选功能",
+          "options": {
+            "rename": "重命名",
+            "TurnCorrect": "小角度转正",
+            "Mvblack": "去黑边",
+            "DeleteNode": "删除"
+          }
+
+        },
+        "noSelected":{
+          "title": "不可选功能",
+          "options":{
+            "check": "查验",
+            "PhoneScan": "移动扫描",
+            "DocRotate": "文档转正",
+            "OCRShow": "OCR识别",
+            "Encryption": "文件加密"
+          }
+
+        }
+      }
+    },
+    "scanSet": {
+      "title":"扫描参数设置",
+      "scanType": {
+        "DPI": {
+          "title": "分辨率"
+        },
+        "color":{
+          "title": "颜色",
+          "options": {
+            "colors": "彩色",
+            "grays": "灰度",
+            "blacks": "黑白"
+          }
+
+        },
+        "scanWay": {
+          "title": "扫描方式",
+          "options": {
+            "single": "单面",
+            "double":"双面"
+          }
+        }
+      }
+    }
+  },
+  "setBtn":{
+    "options": {
+      "function": "功能设置",
+      "scan": "扫描设置",
+      "ocr": "ocr设置",
+      "left": "左旋",
+      "right": "右旋"
+    }
+  },
+  "loading":{
+    "initTitle": "正在初始化，请稍后",
+    "isScanning": "正在扫描，请稍后",
+    "isSaving": "正在保存，请稍后"
+  },
+  "dialog":{
+
+  },
+  "confirm":{
+
+  },
+  "prompt":{
+
+  }
+}
