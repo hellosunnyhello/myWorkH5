@@ -891,7 +891,6 @@ export default {
             case "GetInfo": //case中的字符串为接口，详细请看接口文档
               //console.log(json_obj,json_obj.ocr);
               this._getInfoDo(json_obj)
-              //getOcrMessage(json_obj,json_obj.RstCode,json_obj.fullname,json_obj.ocr);
               break;
             case "GetDevice": //case中的字符串为接口，详细请看接口文档
               console.log('GetDevice',json_obj)
@@ -931,7 +930,7 @@ export default {
               break;
             case "CommitOCR": //case中的字符串为接口，详细请看接口文档
               console.log('CommitOCR',json_obj)
-              //CommitOCRDo(json_obj);
+              this._commitOCRDo(json_obj);
               break;
             case "DeleteOCR": //case中的字符串为接口，详细请看接口文档
               console.log(json_obj);
@@ -1614,6 +1613,12 @@ export default {
         tops.push(top)
       })
       this.infoTops = tops
+    },
+    _commitOCRDo(data) {
+      if(data.RstMesg){
+        this.isShowPrompt = true
+        this.promptMessage = data.RstMesg
+      }
     },
     //点击影像树，切换展示影像图
     nodeClickHandle (data,node,component){
@@ -2381,7 +2386,6 @@ export default {
           this.currentOcrIndex = 0
           this._ocrGetInfo()
         });
-
       }
     },
     ocrPrevPage() {
@@ -2398,7 +2402,6 @@ export default {
           this.currentOcrIndex --
           this._ocrGetInfo()
         });
-
       }
 
     },
@@ -2406,7 +2409,6 @@ export default {
       const {turnOcrPageMessage,promptTitle,cancelSave,confirmSave} = this.pageData.ocr
       if(this.currentOcrIndex < this.ocrFiles.length - 1){
         this.$confirm(turnOcrPageMessage, promptTitle, {
-          distinguishCancelAndClose: true,
           confirmButtonText: confirmSave,
           cancelButtonText: cancelSave,
         }).then(() => {
@@ -2417,7 +2419,6 @@ export default {
           this.currentOcrIndex ++
           this._ocrGetInfo()
         });
-
       }
     },
     ocrLastPage() {
@@ -2434,7 +2435,6 @@ export default {
           this.currentOcrIndex = this.ocrFiles.length - 1
           this._ocrGetInfo()
         });
-
       }
     },
     _commitOcr() {
@@ -2650,7 +2650,7 @@ export default {
             width 40px
     .right-menu
       color white
-      background-color pink
+      background-color rgba(99,118,194,1)
       position absolute
       left 0px
       top 0px
@@ -2658,7 +2658,7 @@ export default {
       .menu-item
         padding 6px 10px
         &:hover
-          background-color #42b983
+          background-color rgba(60,110,180,1)
         .menu-title
           margin 0 10px
     .ocr-wrapper
