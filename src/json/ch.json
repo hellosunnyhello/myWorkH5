@@ -79,15 +79,38 @@
   "loading":{
     "initTitle": "正在初始化，请稍后",
     "isScanning": "正在扫描，请稍后",
-    "isSaving": "正在保存，请稍后"
+    "isSaving": "正在保存，请稍后",
+    "isCommitting": "正在提交，请稍后"
   },
   "dialog":{
-
+    "downloadExe": "请点击确定进入程序下载页面",
+    "exeDisconnect": "客户端异常，请重新启动客户端",
+    "defaultTitle": "影像控件提示",
+    "interventionTitle": "干预分组提示",
+    "cancelBtn": "取消",
+    "confirmBtn": "确定",
+    "device": "获取设备"
   },
   "confirm":{
-
+    "defaultTitle": "影像控件提示",
+    "confirmBtn": "确定"
   },
   "prompt":{
-
+    "defaultTitle": "影像控件提示",
+    "initFail": "初始化返回信息失败",
+    "renameFail": "存在同名文件，请检查",
+    "invoiceCheck": "日期格式有误"
+  },
+  "import": {
+    "title": "正在处理图像，请稍后。。。"
+  },
+  "ocr":{
+    "noOcrData": "当前没有需要校验的数据",
+    "isHistoryNode": "当前节点是历史影像",
+    "exitOcrMessage": "是否保存当前页OCR信息并退出",
+    "turnOcrPageMessage": "是否保存当前页OCR信息并进入下一页",
+    "cancelSave": "取消保存",
+    "confirmSave": "确认保存",
+    "promptTitle": "确认消息"
   }
 }

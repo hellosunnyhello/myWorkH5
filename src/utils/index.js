@@ -7,14 +7,60 @@ let GetUrlParam = function(url) {
     let strs = str.split("&");
     for(var i = 0; i < strs.length; i ++) {
       // 获取该参数名称，值。
-      thisParam[strs[i].split("=")[0]]=strs[i].split("=")[1]
+      thisParam[strs[i].split("=")[0]] = decodeURI(strs[i].split("=")[1])
     }
   }
   // 返回改参数列表对象
   return thisParam
 }
 
+let getArrayKey = function (array,item) {
+  for(let i=0;i<array.length;i++){
+    if(array[i].item === item){
+      return array[i]
+    }
+  }
+}
+
+let getArrayIndex = function (array,item) {
+  for(let i=0;i<array.length;i++){
+    if(array[i].item === item){
+      return i
+    }
+  }
+}
+
+let computedInfo = function (array) {
+  let info = []
+  array.forEach((item,index)=>{
+    let infoItem = {}
+    for(let str in item){
+      if(str==='value'||str==='item'){
+        infoItem[str] = item[str]
+      }
+    }
+    info.push(infoItem)
+  })
+  return info
+}
+let computedDetails = function (array) {
+  let details = []
+  array.forEach((detail,index)=>{
+    let detailArray = []
+    detail.forEach((item,index)=>{
+      let detailItem = {}
+      for(let str in item){
+        if(str==='value'||str==='item'||str==='id'){
+          detailItem[str] = item[str]
+        }
+      }
+      detailArray.push(detailItem)
+    })
+    details.push(detailArray)
+  })
+  return details
+}
 let wsServer = 'ws://127.0.0.1:45679/'
 let imageServer = 'http://127.0.0.1:45679/'
-let ws = new WebSocket(wsServer)
-export {GetUrlParam,ws,imageServer}
+
+export {GetUrlParam,wsServer,imageServer,getArrayKey,getArrayIndex,computedInfo,computedDetails}
