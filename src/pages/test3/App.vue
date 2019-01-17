@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    下载页面
+    帮助页面
   </div>
 </template>
 
@@ -16,6 +16,7 @@ export default {
     }
   },
   mounted (){
+
   },
   methods: {
 
@@ -25,6 +26,5 @@ export default {
 </script>
 
 <style lang="stylus" type="text/stylus" rel="stylesheet/stylus">
-
 
 </style>

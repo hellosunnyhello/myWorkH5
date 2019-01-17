@@ -99,18 +99,23 @@
     "defaultTitle": "影像控件提示",
     "initFail": "初始化返回信息失败",
     "renameFail": "存在同名文件，请检查",
-    "invoiceCheck": "日期格式有误"
+    "invoiceCheck": "日期格式有误",
+    "mobilePrompt": "暂未开通，敬请期待……"
   },
   "import": {
     "title": "正在处理图像，请稍后。。。"
+
   },
   "ocr":{
     "noOcrData": "当前没有需要校验的数据",
     "isHistoryNode": "当前节点是历史影像",
-    "exitOcrMessage": "是否保存当前页OCR信息并退出",
-    "turnOcrPageMessage": "是否保存当前页OCR信息并进入下一页",
+    "exitOcrMessage": "是否更新识别结果并退出",
+    "turnOcrPageMessage": "是否更新识别结果并进入下一页",
     "cancelSave": "取消保存",
     "confirmSave": "确认保存",
     "promptTitle": "确认消息"
+  },
+  "elementMessage": {
+
   }
 }

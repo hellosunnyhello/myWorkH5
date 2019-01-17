@@ -7,19 +7,20 @@
           <div class="tree-header">
             <span>{{pageData.imageList && pageData.imageList.title}}</span>
           </div>
-          <div class="img-tree" >
+          <div class="img-tree">
             <el-tree ref="imageTree"
-                     :data="treeData"
-                     node-key="id"
-                     :indent="8"
-                     default-expand-all
-                     @node-click = 'nodeClickHandle'
-                     @current-change = 'currentNodeChange'
-                     @node-contextmenu = "rightMenuHandler"
-                     @node-expand = "resetRightMenu"
-                     @node-collapse = "resetRightMenu"
+               :data="treeData"
+               node-key="id"
+               :indent="8"
+               default-expand-all
+               @node-click = 'nodeClickHandle'
+               @current-change = 'currentNodeChange'
+               @node-contextmenu = "rightMenuHandler"
+               @node-expand = "resetRightMenu"
+               @node-collapse = "resetRightMenu"
             >
-              <span class="custom-tree-node" slot-scope="{ node, data }">
+              <span class="custom-tree-node" slot-scope="{ node, data }"
+                @mouseleave=nodeMouseLeave(data,$event) @mouseenter=nodeMouseEnter(data,$event)>
                 <img :src="data.icon" class="node-icon" />
                 <span class="node-title">{{ node.label }}</span>
                 <input type="text" class="node-edit"
@@ -98,11 +99,13 @@
           <img src="../../assets/img/images/rightBtn/import.png" alt="">
           <span>导入</span>
         </div>
-        <div class="device-btn btn-item" v-if="initSysParams.PhoneScan === '1'">
+        <div class="device-btn btn-item" v-if="initSysParams.PhoneScan === '1'"
+          @click="phoneScanHandler">
           <img src="../../assets/img/images/rightBtn/qrcode.png" alt="">
           <span>移动扫描</span>
         </div>
-        <div class="device-btn btn-item" v-if="initSysParams.Thumbnail === '1'">
+        <div class="device-btn btn-item" v-if="initSysParams.Thumbnail === '1'"
+          @click="thumbnailHandler">
           <img src="../../assets/img/images/rightBtn/thumbnail.png" alt="">
           <span>缩略图</span>
         </div>
@@ -163,525 +166,552 @@
         <span class="menu-title">删除</span>
       </li>
     </ul>
+    <span class="tips" ref="tips" v-show="isShowTips">{{tipsTitle}}</span>
     <!--正在加载页面-->
-    <div class="is-loading my-model" v-if="isShowLoading">
-      <div class="import-inner model-inner">
-        <div>
-          <img src="../../assets/img/images/222.gif" alt="">
+    <div class="is-loading my-model">
+      <transition name="move">
+        <div class="loading-inner model-inner" v-if="isShowLoading">
+          <div>
+            <img src="../../assets/img/images/loading.gif" alt="">
+          </div>
+          <div class="title">{{loadingMessage}}</div>
         </div>
-        <div class="title">{{loadingMessage}}</div>
-      </div>
+      </transition>
+      <transition name="fade">
+        <div class="mask" v-if="isShowLoading"></div>
+      </transition>
     </div>
     <!--确定取消对话框页面-->
-    <div class="dialog-box my-model" v-if="isShowDialog">
-      <div class="dialog-inner model-inner">
-        <div class="setting-header">{{dialogTitle}}
-          <i class="iconfont icon-bangzhu"></i>
-        </div>
-        <div class="setting-body">
-          <select name="device-name" v-if="isDeviceDialog" @change="changeDevice"
-              v-model="deviceActive">
-            <option v-for="(device,index) in deviceArr" >{{device.drvName}}</option>
-          </select>
-          <div class="intervention-box" v-if="isInterventionDialog">
-            <span>请输入条码信息：</span>
-            <input type="text" v-model="interventionInput" />
-            <span class="original-tips" v-show="interventionInput.length === 0">(请输入20位条码信息)</span>
-            <span class="continue-tips" v-show="interventionInput.length > 0 && interventionInput.length < 20">(请继续输入)</span>
-            <span class="right-tips" v-show="interventionInput.length === 20">(输入字符等于20)</span>
-            <span class="wrong-tips" v-show="interventionInput.length > 20">(输入字符超过20)</span>
+    <div class="dialog-box my-model">
+      <transition name="move">
+        <div class="dialog-inner model-inner" v-if="isShowDialog">
+          <div class="setting-header">{{dialogTitle}}
+            <i class="iconfont icon-bangzhu" @click="helpHandler"></i>
           </div>
-          <div class="title">{{dialogMessage}}</div>
+          <div class="setting-body">
+            <select name="device-name" v-if="isDeviceDialog" @change="changeDevice"
+                    v-model="deviceActive">
+              <option v-for="(device,index) in deviceArr" >{{device.drvName}}</option>
+            </select>
+            <div class="intervention-box" v-if="isInterventionDialog">
+              <span>请输入条码信息：</span>
+              <input type="text" v-model="interventionInput" />
+              <span class="original-tips" v-show="interventionInput.length === 0">(请输入20位条码信息)</span>
+              <span class="continue-tips" v-show="interventionInput.length > 0 && interventionInput.length < 20">(请继续输入)</span>
+              <span class="right-tips" v-show="interventionInput.length === 20">(输入字符等于20)</span>
+              <span class="wrong-tips" v-show="interventionInput.length > 20">(输入字符超过20)</span>
+            </div>
+            <div class="title">{{dialogMessage}}</div>
+          </div>
+          <div class="setting-footer">
+            <el-row>
+              <el-button @click='isShowDialog = false'>{{pageData.dialog.cancelBtn}}</el-button>
+              <el-button type="primary" @click="dialogConfirmHandle">{{pageData.dialog.confirmBtn}}</el-button>
+            </el-row>
+          </div>
         </div>
-        <div class="setting-footer">
-          <el-row>
-            <el-button @click='isShowDialog = false'>{{pageData.dialog.cancelBtn}}</el-button>
-            <el-button type="primary" @click="dialogConfirmHandle">{{pageData.dialog.confirmBtn}}</el-button>
-          </el-row>
-        </div>
-      </div>
+      </transition>
+      <transition>
+        <div class="mask" v-if="isShowDialog" @click='isShowDialog = false'></div>
+      </transition>
     </div>
     <!--提示消息页面-->
-    <div class="prompt-box my-model" v-if="isShowPrompt">
-      <div class="prompt-inner model-inner">
-        <div class="setting-header">{{pageData.prompt && pageData.prompt.defaultTitle}}
-          <i class="iconfont icon-bangzhu"></i>
-          <div class="close-btn" @click="isShowPrompt = !isShowPrompt">
-            <i class="iconfont icon-guanbi"></i>
+    <div class="prompt-box my-model">
+      <transition name="move">
+        <div class="prompt-inner model-inner" v-if="isShowPrompt">
+          <div class="setting-header">{{pageData.prompt && pageData.prompt.defaultTitle}}
+            <i class="iconfont icon-bangzhu" @click="helpHandler"></i>
+            <div class="close-btn" @click="isShowPrompt = !isShowPrompt">
+              <i class="iconfont icon-guanbi"></i>
+            </div>
+          </div>
+          <div class="setting-body">
+            <div class="title">{{promptMessage}}</div>
           </div>
         </div>
-        <div class="setting-body">
-          <div class="title">{{promptMessage}}</div>
-        </div>
-      </div>
+      </transition>
+      <transition name="fade">
+        <div class="mask" v-if="isShowPrompt" @click="isShowPrompt = !isShowPrompt"></div>
+      </transition>
     </div>
     <!--导入进度条页面-->
-    <div class="import-model my-model" v-if="showImportModel">
-      <div class="import-inner model-inner">
-        <el-progress :text-inside="true" :stroke-width="18" :percentage="importProgress" color="rgba(99,118,194,.9)"></el-progress>
-        <div class="title">{{pageData.import.title}}</div>
-      </div>
+    <div class="import-model my-model">
+      <transition name="move">
+        <div class="import-inner model-inner" v-if="showImportModel">
+          <el-progress :text-inside="true" :stroke-width="18" :percentage="importProgress" color="rgba(99,118,194,.9)"></el-progress>
+          <div class="title">{{pageData.import.title}}</div>
+        </div>
+      </transition>
+      <transition name="fade">
+        <div class="mask" v-if="showImportModel"></div>
+      </transition>
+
     </div>
     <!--确定框页面-->
-    <div class="confirm-box my-model" v-if="isShowConfirm">
-      <div class="confirm-inner model-inner">
-        <div class="setting-header">{{pageData.confirm && pageData.confirm.defaultTitle}}
-          <i class="iconfont icon-bangzhu"></i>
-          <div class="close-btn" @click="confirmHandler">
-            <i class="iconfont icon-guanbi"></i>
+    <div class="confirm-box my-model">
+      <transition name="move">
+        <div class="confirm-inner model-inner" v-if="isShowConfirm">
+          <div class="setting-header">{{pageData.confirm && pageData.confirm.defaultTitle}}
+            <i class="iconfont icon-bangzhu"></i>
+            <div class="close-btn" @click="confirmHandler">
+              <i class="iconfont icon-guanbi"></i>
+            </div>
+          </div>
+          <div class="setting-body">
+            <div class="title">{{confirmMessage}}</div>
+          </div>
+          <div class="setting-footer">
+            <el-button type="primary" @click="confirmHandler">{{pageData.confirm && pageData.confirm.confirmBtn}}</el-button>
           </div>
         </div>
-        <div class="setting-body">
-          <div class="title">{{confirmMessage}}</div>
-        </div>
-        <div class="setting-footer">
-          <el-button type="primary" @click="confirmHandler">{{pageData.confirm && pageData.confirm.confirmBtn}}</el-button>
-        </div>
-      </div>
+      </transition>
+      <transition name="fade">
+        <div class="mask" v-if="isShowConfirm" @click="confirmHandler"></div>
+      </transition>
     </div>
     <!--OCR人工干预页面-->
-    <div class="ocr-wrapper" v-show="isShowOcrInfo">
-      <div class="ocr-con">
-        <div class="ocr-img">
-          <div class="img-cut">
-            <div class="img-part" ref="canvasBox">
-              <canvas id="cut-canvas">你的浏览器不支持，请升级你的浏览器</canvas>
-              <img src="../../assets/img/images/ocr/canvas_cut.png" alt="">
-            </div>
-            <div class="input-check">
-              <input type="text" ref="inputCheck" v-model="infoManual"
-                @input="checkInput">
-              <img src="../../assets/img/images/ocr/ocrMessage.png" alt="">
-            </div>
-          </div>
-          <div class="img-main" ref="ocrImgBox">
-            <img :src="ocrImageSrc" alt="" class="showOcrImg" ref="myOcrImg">
-            <canvas id="ocr-canvas">你的浏览器不支持，请升级你的浏览器</canvas>
-          </div>
-          <div class="ocr-btns">
-            <div class="left-btns">
-              <div class="left-inner-con">
-                <div class="check-btn" @click="checkInvoice">
-                  <span>查验</span>
-                </div>
-                <div class="page-btn" :class="{inactive:currentOcrIndex===0}"
-                  @click="ocrFirstPage">
-                  <i class="iconfont icon-diyiye"></i>
-                </div>
-                <div class="page-btn" :class="{inactive:currentOcrIndex===0}"
-                  @click="ocrPrevPage">
-                  <i class="iconfont icon-lunbozuofangun"></i>
-                </div>
-                <div class="middle-btn page-btn">
-                  <span v-if="ocrFiles">{{currentOcrIndex+1}}/{{ocrFiles.length}}</span>
-                </div>
-                <div class="page-btn" :class="{inactive:currentOcrIndex===ocrFiles.length-1}"
-                  @click="ocrNextPage">
-                  <i class="iconfont icon-lunboyoufangun"></i>
-                </div>
-                <div class="page-btn" :class="{inactive:currentOcrIndex===ocrFiles.length-1}"
-                  @click="ocrLastPage">
-                  <i class="iconfont icon-zuihouyiye"></i>
-                </div>
+    <transition name="fadeOcr">
+      <div class="ocr-wrapper" v-show="isShowOcrInfo">
+        <div class="ocr-con">
+          <div class="ocr-img">
+            <div class="img-cut">
+              <div class="img-part" ref="canvasBox">
+                <canvas id="cut-canvas">你的浏览器不支持，请升级你的浏览器</canvas>
+                <img src="../../assets/img/images/ocr/canvas_cut.png" alt="">
               </div>
+              <div class="input-check">
+                <input type="text" ref="inputCheck" v-model="infoManual"
+                       @input="checkInput">
+                <img src="../../assets/img/images/ocr/ocrMessage.png" alt="">
+              </div>
+            </div>
+            <div class="img-main" ref="ocrImgBox">
+              <img :src="ocrImageSrc" alt="" class="showOcrImg" ref="myOcrImg">
+              <canvas id="ocr-canvas" @mousemove="showCanvasZoom"
+                      @mouseleave="hiddenCanvasZoom">
+                你的浏览器不支持，请升级你的浏览器
+              </canvas>
+            </div>
+            <div class="ocr-btns">
+              <div class="left-btns">
+                <div class="left-inner-con">
+                  <div class="check-btn" @click="checkInvoice">
+                    <span>查验</span>
+                  </div>
+                  <div class="page-btn" :class="{inactive:currentOcrIndex===0}"
+                       @click="ocrFirstPage">
+                    <i class="iconfont icon-diyiye"></i>
+                  </div>
+                  <div class="page-btn" :class="{inactive:currentOcrIndex===0}"
+                       @click="ocrPrevPage">
+                    <i class="iconfont icon-lunbozuofangun"></i>
+                  </div>
+                  <div class="middle-btn page-btn">
+                    <span v-if="ocrFiles">{{currentOcrIndex+1}}/{{ocrFiles.length}}</span>
+                  </div>
+                  <div class="page-btn" :class="{inactive:currentOcrIndex===ocrFiles.length-1}"
+                       @click="ocrNextPage">
+                    <i class="iconfont icon-lunboyoufangun"></i>
+                  </div>
+                  <div class="page-btn" :class="{inactive:currentOcrIndex===ocrFiles.length-1}"
+                       @click="ocrLastPage">
+                    <i class="iconfont icon-zuihouyiye"></i>
+                  </div>
+                </div>
 
-            </div>
-            <div class="right-btns">
-              <select name="imgType" v-model="ocrPattern" @change="changePattern">
-                <option class="test-select">增值税专用发票</option>
-                <option class="test-select">增值税普通发票</option>
-                <option class="test-select">银行承兑汇票</option>
-              </select>
+              </div>
+              <div class="right-btns">
+                <select name="imgType" v-model="ocrPattern" @change="changePattern">
+                  <option class="test-select">增值税专用发票</option>
+                  <option class="test-select">增值税普通发票</option>
+                  <option class="test-select">银行承兑汇票</option>
+                </select>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="ocr-data">
-          <div ref="ocrInfoList">
-            <div class="data">
-              <div class="data-header">
-                <span>基本信息</span>
-              </div>
-              <div class="data-body">
-                <ul class="data-list">
-                  <li class="list-item" v-for="(info,index) in basicInfo" ref="info.item"
-                      v-if="isPatternAllSelect || (!isPatternAllSelect && info.k === '1')">
-                    <span class="item-icon" v-if="info.k === '0'">-</span>
-                    <span class="item-icon" v-if="info.k === '1'">
+          <div class="ocr-data">
+            <div ref="ocrInfoList">
+              <div class="data">
+                <div class="data-header">
+                  <span>基本信息</span>
+                </div>
+                <div class="data-body">
+                  <ul class="data-list">
+                    <li class="list-item" v-for="(info,index) in basicInfo" :ref="info.item"
+                        v-if="isPatternAllSelect || (!isPatternAllSelect && info.k === '1')">
+                      <span class="item-icon" v-if="info.k === '0'">-</span>
+                      <span class="item-icon" v-if="info.k === '1'">
                     <img src="../../assets/img/images/ocr/dot.png" alt="">
                   </span>
-                    <span class="item-name">{{info.description}}</span>
-                    <span class="item-value">
+                      <span class="item-name">{{info.description}}</span>
+                      <span class="item-value">
                     <input type="text" :value="info.value" @click="showCutCanvas(info.item,basicInfo,'basicInfo')"
                            @input="changeInfoHandler">
                   </span>
-                    <span class="item-check">
+                      <span class="item-check">
                     <i class="iconfont icon-tijiaochenggongduigou check-right"></i>
                     <i class="iconfont icon-jingshigantanhao check-wrong"></i>
                   </span>
-                  </li>
-                </ul>
+                    </li>
+                  </ul>
+                </div>
               </div>
-            </div>
-            <div class="data" v-if="isPatternAllSelect">
-              <div class="data-header">
-                <span>购方信息</span>
-              </div>
-              <div class="data-body">
-                <ul class="data-list">
-                  <li class="list-item"  v-for="(info,index) in buyer" ref="info.item">
-                    <span class="item-icon" v-if="info.k === '0'">-</span>
-                    <span class="item-icon" v-if="info.k === '1'">
+              <div class="data" v-if="isPatternAllSelect">
+                <div class="data-header">
+                  <span>购方信息</span>
+                </div>
+                <div class="data-body">
+                  <ul class="data-list">
+                    <li class="list-item"  v-for="(info,index) in buyer" ref="info.item">
+                      <span class="item-icon" v-if="info.k === '0'">-</span>
+                      <span class="item-icon" v-if="info.k === '1'">
                     <img src="../../assets/img/images/ocr/dot.png" alt="">
                   </span>
-                    <span class="item-name">{{info.description}}</span>
-                    <span class="item-value">
+                      <span class="item-name">{{info.description}}</span>
+                      <span class="item-value">
                     <input type="text" :value="info.value" @click="showCutCanvas(info.item,buyer,'buyer')"
                            @input="changeInfoHandler">
                   </span>
-                    <span class="item-check">
+                      <span class="item-check">
                     <i class="iconfont icon-tijiaochenggongduigou check-right"></i>
                     <i class="iconfont icon-jingshigantanhao check-wrong"></i>
                   </span>
-                  </li>
-                </ul>
-                <div class="sync-btn">
-                  <img src="../../assets/img/images/ocr/sync.png" alt="">
+                    </li>
+                  </ul>
+                  <div class="sync-btn" @click="syncClickHandler('buyer')">
+                    <img src="../../assets/img/images/ocr/sync.png" alt="">
+                    <span>同步</span>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div class="data" v-if="isPatternAllSelect">
-              <div class="data-header">
-                <span>售方信息</span>
-              </div>
-              <div class="data-body">
-                <ul class="data-list">
-                  <li class="list-item"  v-for="(info,index) in seller" ref="info.item">
-                    <span class="item-icon" v-if="info.k === '0'">-</span>
-                    <span class="item-icon" v-if="info.k === '1'">
+              <div class="data" v-if="isPatternAllSelect">
+                <div class="data-header">
+                  <span>售方信息</span>
+                </div>
+                <div class="data-body">
+                  <ul class="data-list">
+                    <li class="list-item"  v-for="(info,index) in seller" ref="info.item">
+                      <span class="item-icon" v-if="info.k === '0'">-</span>
+                      <span class="item-icon" v-if="info.k === '1'">
                     <img src="../../assets/img/images/ocr/dot.png" alt="">
                   </span>
-                    <span class="item-name">{{info.description}}</span>
-                    <span class="item-value">
+                      <span class="item-name">{{info.description}}</span>
+                      <span class="item-value">
                     <input type="text" :value="info.value" @click="showCutCanvas(info.item,seller,'seller')"
                            @input="changeInfoHandler">
                   </span>
-                    <span class="item-check">
+                      <span class="item-check">
                     <i class="iconfont icon-tijiaochenggongduigou check-right"></i>
                     <i class="iconfont icon-jingshigantanhao check-wrong"></i>
                   </span>
-                  </li>
-                </ul>
-                <div class="sync-btn">
-                  <img src="../../assets/img/images/ocr/sync.png" alt="">
+                    </li>
+                  </ul>
+                  <div class="sync-btn" @click="syncClickHandler('seller')">
+                    <img src="../../assets/img/images/ocr/sync.png" alt="">
+                    <span>同步</span>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div class="data" v-if="isPatternAllSelect">
-              <div class="data-header">
-                <span>密码区域</span>
-              </div>
-              <div class="data-body">
-                <ul class="data-list">
-                  <li class="list-item"  v-for="(info,index) in passwdInfo" ref="info.item">
-                    <span class="item-icon" v-if="info.k === '0'">-</span>
-                    <span class="item-icon" v-if="info.k === '1'">
+              <div class="data" v-if="isPatternAllSelect">
+                <div class="data-header">
+                  <span>密码区域</span>
+                </div>
+                <div class="data-body">
+                  <ul class="data-list">
+                    <li class="list-item"  v-for="(info,index) in passwdInfo" ref="info.item">
+                      <span class="item-icon" v-if="info.k === '0'">-</span>
+                      <span class="item-icon" v-if="info.k === '1'">
                     <img src="../../assets/img/images/ocr/dot.png" alt="">
                   </span>
-                    <span class="item-name">{{info.description}}</span>
-                    <span class="item-value">
+                      <span class="item-name">{{info.description}}</span>
+                      <span class="item-value">
                     <input type="text" :value="info.value" @click="showCutCanvas(info.item,passwdInfo,'passwdInfo')"
                            @input="changeInfoHandler">
                   </span>
-                    <span class="item-check">
+                      <span class="item-check">
                     <i class="iconfont icon-tijiaochenggongduigou check-right"></i>
                     <i class="iconfont icon-jingshigantanhao check-wrong"></i>
                   </span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-            <div class="data" v-if="isPatternAllSelect">
-              <div class="data-header">
-                <span>发票明细</span>
-              </div>
-              <div class="data-body">
-                <div class="detail-btn" >
-                  <div class="page-num" v-for="(detail,index) in details" :class="{active:detailIndex===index}"
-                       @click="detailIndex=index">
-                    <span>{{index+1}}</span>
-                  </div>
-                  <div class="page-num" @click="addDetails">
-                    <span>+</span>
-                  </div>
-                  <div class="page-num"  @click="reduceDetails">
-                    <span>-</span>
-                  </div>
+                    </li>
+                  </ul>
                 </div>
-                <div class="data-list" v-for="(detail,index) in details" v-if="index === detailIndex">
-                  <li class="list-item" ref="info.item"  v-for="(info,i) in detail">
-                    <span class="item-icon" v-if="info.k === '0'">-</span>
-                    <span class="item-icon" v-if="info.k === '1'">
+              </div>
+              <div class="data" v-if="isPatternAllSelect">
+                <div class="data-header">
+                  <span>发票明细</span>
+                </div>
+                <div class="data-body">
+                  <div class="detail-btn" >
+                    <div class="page-num" v-for="(detail,index) in details" :class="{active:detailIndex===index}"
+                         @click="switchDetailPage(index)">
+                      <span>{{index+1}}</span>
+                    </div>
+                    <div class="page-num" @click="addDetails">
+                      <span>+</span>
+                    </div>
+                    <div class="page-num"  @click="reduceDetails">
+                      <span>-</span>
+                    </div>
+                  </div>
+                  <div class="data-list" v-for="(detail,index) in details" v-if="index === detailIndex">
+                    <li class="list-item" :ref="info.item"  v-for="(info,i) in detail">
+                      <span class="item-icon" v-if="info.k === '0'">-</span>
+                      <span class="item-icon" v-if="info.k === '1'">
                       <img src="../../assets/img/images/ocr/dot.png" alt="">
                     </span>
-                    <span class="item-name">{{info.description}}</span>
-                    <span class="item-value">
+                      <span class="item-name">{{info.description}}</span>
+                      <span class="item-value">
                       <input type="text" :value="info.value" @click="showCutCanvas(info.item,details,'details')"
                              @input="changeInfoHandler">
                     </span>
-                    <span class="item-check">
+                      <span class="item-check">
                     <i class="iconfont icon-tijiaochenggongduigou check-right"></i>
                     <i class="iconfont icon-jingshigantanhao check-wrong"></i>
                   </span>
-                  </li>
+                    </li>
 
+
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+        <div class="ocr-right-tab">
+          <div class="close-btn" @click="closeOcrHandler">
+            <i class="iconfont icon-guanbi"></i>
+          </div>
+          <div class="all-tab" v-if="isPatternAllSelect">
+            <div class="info-tab tab-item" @click="switchInfoTab(0)"
+                 :class="{active:infoIndex===0}">
+              <div class="info">基本信息</div>
+            </div>
+            <div class="buyer-tab tab-item" @click="switchInfoTab(1)"
+                 :class="{active:infoIndex===1}">
+              <div class="buyer">购方信息</div>
+            </div>
+            <div class="sell-tab tab-item" @click="switchInfoTab(2)"
+                 :class="{active:infoIndex===2}">
+              <div class="sell" >售方信息</div>
+            </div>
+            <div class="passwd-tab tab-item" @click="switchInfoTab(3)"
+                 :class="{active:infoIndex===3}">
+              <div class="passwd" >密码区域</div>
+            </div>
+            <div class="details-tab tab-item" @click="switchInfoTab(4)"
+                 :class="{active:infoIndex===4}">
+              <div class="details" >发票明细</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
+    <!--缩略图页面-->
+    <transition name="fadeThumbnail">
+      <div class="thumbnail-wrapper" v-if="isShowThumbnail" @mousewheel="doSomething">
+        <div class="thumbnail-inner" ref="thumbnailBox">
+          <ul class="thumbnail-list">
+            <li class="thumbnail-item" v-for="(item,index) in allImageFiles" ref="thumbnailItem"
+              @click="selectThumbnail(item.imageItem.sid)">
+              <img v-if="item.imageItem.history" :src="item.imageItem.fullname" alt="">
+              <img v-else :src="'http://127.0.0.1:45679/' + item.imageItem.fullname" alt="">
+            </li>
+          </ul>
+          <div class="thumbnail-right-tab">
+            <div class="close-btn" @click="isShowThumbnail=false">
+              <i class="iconfont icon-guanbi"></i>
+            </div>
+            <ul class="tab-list">
+              <li class="tab-item">
+                <span class="label">原图</span>
+                <input type="radio" class="radio-type" name="imageType" value="yuantu">
+              </li>
+              <li class="tab-item">
+                <span class="label">原图</span>
+                <input type="radio" class="radio-type" name="imageType" value="yuantu">
+              </li>
+              <li class="tab-item">
+                <span class="label">原图</span>
+                <input type="radio" class="radio-type" name="imageType" value="yuantu">
+              </li>
+              <li class="tab-item">
+                <span class="label">原图</span>
+                <input type="radio" class="radio-type" name="imageType" value="yuantu">
+              </li>
+
+            </ul>
+          </div>
+        </div>
+      </div>
+    </transition>
+    <!--功能设置页面-->
+    <div class="function-setting my-model">
+        <transition name="move">
+          <div class="function-setting-inner model-inner" v-if="isShowFunctionSettings">
+            <div class="setting-header">
+              <h4>功能设置</h4>
+            </div>
+            <div class="function-setting-body">
+              <div class="select-type">
+                <h4>可选功能</h4>
+                <div class="switch-box">
+                  <div class="switch-item">
+                    <span>重命名</span>
+                    <el-switch v-model="Rename">
+                    </el-switch>
+                  </div>
+                  <div class="switch-item">
+                    <span>小角度转正</span>
+                    <el-switch v-model="TurnCorrect">
+                    </el-switch>
+                  </div>
+                  <div class="switch-item">
+                    <span>去黑边</span>
+                    <el-switch v-model="Mvblack">
+                    </el-switch>
+                  </div>
+                  <div class="switch-item">
+                    <span>删除</span>
+                    <el-switch v-model="DeleteNode">
+                    </el-switch>
+                  </div>
+
+                </div>
+              </div>
+              <div class="select-type">
+                <h4>不可选功能</h4>
+                <div class="switch-box">
+                  <div class="switch-item">
+                    <span>查验</span>
+                    <el-switch v-model="BeCheck" disabled>
+                    </el-switch>
+                  </div>
+                  <div class="switch-item">
+                    <span>移动扫描</span>
+                    <el-switch v-model="PhoneScan" disabled>
+                    </el-switch>
+                  </div>
+                  <div class="switch-item">
+                    <span>文档转正</span>
+                    <el-switch v-model="DocAutoRatate" disabled>
+                    </el-switch>
+                  </div>
+                  <div class="switch-item">
+                    <span>OCR识别</span>
+                    <el-switch v-model="OCRShow" disabled>
+                    </el-switch>
+                  </div>
+                  <div class="switch-item">
+                    <span>文件加密</span>
+                    <el-switch v-model="Encryption" disabled>
+                    </el-switch>
+                  </div>
 
                 </div>
               </div>
             </div>
-          </div>
-
-        </div>
-      </div>
-      <div class="ocr-right-tab">
-        <div class="close-btn" @click="isShowOcrInfo = false">
-          <i class="iconfont icon-guanbi"></i>
-        </div>
-        <div class="all-tab">
-          <div class="info-tab tab-item" @click="switchInfoTab(0)"
-            :class="{active:infoIndex===0}">
-            <div class="info">基本信息</div>
-          </div>
-          <div class="buyer-tab tab-item" @click="switchInfoTab(1)"
-            :class="{active:infoIndex===1}">
-            <div class="buyer">购方信息</div>
-          </div>
-          <div class="sell-tab tab-item" @click="switchInfoTab(2)"
-               :class="{active:infoIndex===2}">
-            <div class="sell" >售方信息</div>
-          </div>
-          <div class="passwd-tab tab-item" @click="switchInfoTab(3)"
-               :class="{active:infoIndex===3}">
-            <div class="passwd" >密码区域</div>
-          </div>
-          <div class="details-tab tab-item" @click="switchInfoTab(4)"
-               :class="{active:infoIndex===4}">
-            <div class="details" >发票明细</div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!--缩略图页面-->
-    <div class="thumbnail-wrapper">
-      <div class="thumbnail-inner">
-        <ul class="thumbnail-list">
-          <li class="thumbnail-item">
-            <img src="../../assets/img/testdata/test.jpg" alt="">
-          </li>
-          <li class="thumbnail-item">
-            <img src="../../assets/img/testdata/test.jpg" alt="">
-          </li>
-          <li class="thumbnail-item">
-            <img src="../../assets/img/testdata/test.jpg" alt="">
-          </li>
-          <li class="thumbnail-item">
-            <img src="../../assets/img/testdata/test.jpg" alt="">
-          </li>
-          <li class="thumbnail-item">
-            <img src="../../assets/img/testdata/test.jpg" alt="">
-          </li>
-          <li class="thumbnail-item">
-            <img src="../../assets/img/testdata/test.jpg" alt="">
-          </li>
-          <li class="thumbnail-item">
-            <img src="../../assets/img/testdata/test.jpg" alt="">
-          </li>
-          <li class="thumbnail-item">
-            <img src="../../assets/img/testdata/test.jpg" alt="">
-          </li>
-          <li class="thumbnail-item">
-            <img src="../../assets/img/testdata/test.jpg" alt="">
-          </li>
-        </ul>
-        <div class="thumbnail-right-tab">
-          <div class="close-btn">
-            <i class="iconfont icon-guanbi"></i>
-          </div>
-          <ul class="tab-list">
-            <li class="tab-item">
-              <span class="label">原图</span>
-              <input type="radio" class="radio-type" name="imageType" value="yuantu">
-            </li>
-            <li class="tab-item">
-              <span class="label">原图</span>
-              <input type="radio" class="radio-type" name="imageType" value="yuantu">
-            </li>
-            <li class="tab-item">
-              <span class="label">原图</span>
-              <input type="radio" class="radio-type" name="imageType" value="yuantu">
-            </li>
-            <li class="tab-item">
-              <span class="label">原图</span>
-              <input type="radio" class="radio-type" name="imageType" value="yuantu">
-            </li>
-
-          </ul>
-        </div>
-      </div>
-
-    </div>
-    <!--功能设置页面-->
-    <div class="function-setting my-model" v-if="isShowFunctionSettings">
-      <div class="function-setting-inner model-inner">
-        <div class="setting-header">
-          <h4>功能设置</h4>
-        </div>
-        <div class="function-setting-body">
-          <div class="select-type">
-            <h4>可选功能</h4>
-            <div class="switch-box">
-              <div class="switch-item">
-                <span>重命名</span>
-                <el-switch v-model="Rename">
-                </el-switch>
-              </div>
-              <div class="switch-item">
-                <span>小角度转正</span>
-                <el-switch v-model="TurnCorrect">
-                </el-switch>
-              </div>
-              <div class="switch-item">
-                <span>去黑边</span>
-                <el-switch v-model="Mvblack">
-                </el-switch>
-              </div>
-              <div class="switch-item">
-                <span>删除</span>
-                <el-switch v-model="DeleteNode">
-                </el-switch>
-              </div>
-
+            <div class="setting-footer">
+              <el-row>
+                <el-button @click="cancelUpdateFun">取消</el-button>
+                <el-button type="primary" @click="updateFunSetting">确认</el-button>
+              </el-row>
             </div>
           </div>
-          <div class="select-type">
-            <h4>不可选功能</h4>
-            <div class="switch-box">
-              <div class="switch-item">
-                <span>查验</span>
-                <el-switch v-model="BeCheck" disabled>
-                </el-switch>
-              </div>
-              <div class="switch-item">
-                <span>移动扫描</span>
-                <el-switch v-model="PhoneScan" disabled>
-                </el-switch>
-              </div>
-              <div class="switch-item">
-                <span>文档转正</span>
-                <el-switch v-model="DocAutoRatate" disabled>
-                </el-switch>
-              </div>
-              <div class="switch-item">
-                <span>OCR识别</span>
-                <el-switch v-model="OCRShow" disabled>
-                </el-switch>
-              </div>
-              <div class="switch-item">
-                <span>文件加密</span>
-                <el-switch v-model="Encryption" disabled>
-                </el-switch>
-              </div>
-
-            </div>
-          </div>
-        </div>
-        <div class="setting-footer">
-          <el-row>
-            <el-button @click.stop="cancelUpdateFun">取消</el-button>
-            <el-button type="primary" @click.stop="updateFunSetting">确认</el-button>
-          </el-row>
-        </div>
+        </transition>
+        <transition name="fade">
+          <div class="mask" v-if="isShowFunctionSettings" @click="cancelUpdateFun"></div>
+        </transition>
       </div>
-    </div>
     <!--扫描设置页面-->
-    <div class="scan-setting my-model" v-if="isShowScanSettings">
-      <div class="scan-setting-inner model-inner">
-        <div class="setting-header">
-          <h4>扫描参数设置</h4>
-        </div>
-        <div class="scan-body">
-          <div class="scan-option">
-            <div class="title">
-              分辨率
-            </div>
-            <div class="option">
-              <el-radio v-model="scanRate" label="1">200dpi</el-radio>
-              <el-radio v-model="scanRate" label="2">300dpi</el-radio>
-            </div>
+    <div class="scan-setting my-model">
+      <transition name="move">
+        <div class="scan-setting-inner model-inner" v-if="isShowScanSettings">
+          <div class="setting-header">
+            <h4>扫描参数设置</h4>
           </div>
-          <div class="scan-option">
-            <div class="title">
-              颜色
+          <div class="scan-body">
+            <div class="scan-option">
+              <div class="title">
+                分辨率
+              </div>
+              <div class="option">
+                <el-radio v-model="scanRate" label="1">200dpi</el-radio>
+                <el-radio v-model="scanRate" label="2">300dpi</el-radio>
+              </div>
             </div>
-            <div class="option">
-              <el-radio v-model="scanColor" label="2">彩色</el-radio>
-              <el-radio v-model="scanColor" label="1">灰度</el-radio>
-              <el-radio v-model="scanColor" label="0">黑白</el-radio>
+            <div class="scan-option">
+              <div class="title">
+                颜色
+              </div>
+              <div class="option">
+                <el-radio v-model="scanColor" label="2">彩色</el-radio>
+                <el-radio v-model="scanColor" label="1">灰度</el-radio>
+                <el-radio v-model="scanColor" label="0">黑白</el-radio>
+              </div>
             </div>
-          </div>
-          <div class="scan-option">
-            <div class="title">
-              扫描方式
+            <div class="scan-option">
+              <div class="title">
+                扫描方式
+              </div>
+              <div class="option">
+                <el-radio v-model="scanWay" label="1" >单面</el-radio>
+                <el-radio v-model="scanWay" label="2" >双面</el-radio>
+              </div>
             </div>
-            <div class="option">
-              <el-radio v-model="scanWay" label="1" >单面</el-radio>
-              <el-radio v-model="scanWay" label="2" >双面</el-radio>
-            </div>
-          </div>
 
+          </div>
+          <div class="setting-footer">
+            <el-row>
+              <el-button @click = "cancelUpdateScan">取消</el-button>
+              <el-button type="primary" @click = "updateScanSettings">确认</el-button>
+            </el-row>
+          </div>
         </div>
-        <div class="setting-footer">
-          <el-row>
-            <el-button @click.stop = "cancelUpdateScan">取消</el-button>
-            <el-button type="primary" @click.stop = "updateScanSettings">确认</el-button>
-          </el-row>
-        </div>
-      </div>
+      </transition>
+      <transition name="fade">
+        <div class="mask" v-if="isShowScanSettings" @click = "cancelUpdateScan"></div>
+      </transition>
     </div>
     <!--OCR设置页面-->
-    <div class="ocr-setting my-model" v-if="isShowOcrSettings">
-      <div class="ocr-setting-inner model-inner">
-        <div class="setting-header">
-          <h4>扫描参数设置</h4>
-        </div>
-        <div class="ocr-body">
-          <div class="left-tab">
-            <div :class="{active:activePattern==='pattern1'}"
-              @click.stop="setPattern1">
-              增值税专用发票
+    <div class="ocr-setting my-model">
+      <transition name="move">
+        <div class="ocr-setting-inner model-inner" v-if="isShowOcrSettings">
+          <div class="setting-header">
+            <h4>扫描参数设置</h4>
+          </div>
+          <div class="ocr-body">
+            <div class="left-tab">
+              <div :class="{active:activePattern==='pattern1'}"
+                   @click.stop="setPattern1">
+                增值税专用发票
+              </div>
+              <div :class="{active:activePattern==='pattern2'}"
+                   @click="setPattern2">
+                增值税普通发票
+              </div>
             </div>
-            <div :class="{active:activePattern==='pattern2'}"
-              @click="setPattern2">
-              增值税普通发票
+            <div class="right-tab">
+              <div class="ocr-btn">
+                <el-button type="primary" @click="toggleShow">全选/取消全选</el-button>
+              </div>
+              <div class="ocr-img">
+                <img :src="ocrSetImg" alt="">
+              </div>
             </div>
           </div>
-          <div class="right-tab">
-            <div class="ocr-btn">
-              <el-button type="primary" @click="toggleShow">全选/取消全选</el-button>
-            </div>
-            <div class="ocr-img">
-              <img :src="ocrSetImg" alt="">
-            </div>
+          <div class="setting-footer">
+            <el-row>
+              <el-button @click="cancelOcrSet">取消</el-button>
+              <el-button type="primary" @click="updateOcrSet">确认</el-button>
+            </el-row>
           </div>
         </div>
-        <div class="setting-footer">
-          <el-row>
-            <el-button @click="cancelOcrSet">取消</el-button>
-            <el-button type="primary" @click="updateOcrSet">确认</el-button>
-          </el-row>
-        </div>
-      </div>
+      </transition>
+      <transition name="fade">
+        <div class="mask" v-if="isShowOcrSettings" @click="cancelOcrSet"></div>
+      </transition>
     </div>
-
   </div>
 </template>
 
@@ -693,7 +723,8 @@ import {
   getArrayKey,
   getArrayIndex,
   computedInfo,
-  computedDetails} from '../../utils'
+  computedDetails,
+  convertCurrency} from '../../utils'
 import vueEasyPrint from "vue-easy-print"
 import chData from '../../json/ch.json'
 import enData from '../../json/en.json'
@@ -785,20 +816,34 @@ export default {
       ocrPattern: '', //当前ocr识别的发票模式
       ocrImageSrc: '',  //当前ocr图片的地址
       currentOcrFullName: '', //当前ocr的fullname
-      basicInfo: null,
-      buyer: null,
-      seller: null,
-      details: null,
-      passwdInfo: null,
+      basicInfo: [],
+      buyer: [],
+      seller: [],
+      details: [],
+      passwdInfo: [],
+      detailInfo: [],
       infoManual: '',    //正在人工干预发票信息
       currentItem: '',   //正在干预的input项名
       currentInfoName: '', //正在干预的是哪个信息下的选项
       detailIndex: 0,    //当前展示的商品详情的下标
       isPatternAllSelect: true,
       //ocr识别消息的滚动
-      //infoIndex: 0,    //当前消息的下标
+      //infoIndex: 0,    //当前消息的下标通过计算属性获得
       infoTops: [],
-      infoScrollY: 0
+      infoScrollY: 0,
+
+      //影像树hover提示
+      isShowTips: false,
+      tipsTitle: '',
+      //放大镜效果
+      centerPoint: {},                // 图片被放大区域的中心点，也是放大镜的中心点
+      originalRadius: 80,            //放大镜区域半径
+      originalRectangle: {},          //图片区域
+      scale: 2,                       //放大倍数
+      scaleGlassRectangle: null,    //放大后的区域
+      //缩略图展示
+      isShowThumbnail: false,
+      thumbnailIndex: 0             //缩略图下标，控制显示几分图
     };
   },
   mounted (){
@@ -898,7 +943,7 @@ export default {
               break;
             case "SCAN": //case中的字符串为接口，详细请看接口文档
               console.log('SCAN',json_obj);
-              //SCANDo(json_obj);
+              this._scanDo(json_obj);
               break;
             case "SAVE": //case中的字符串为接口，详细请看接口文档
               console.log(json_obj);
@@ -934,11 +979,11 @@ export default {
               break;
             case "DeleteOCR": //case中的字符串为接口，详细请看接口文档
               console.log(json_obj);
-              //DeleteOCRDo(json_obj);
+              this._deleteOCRDo(json_obj);
               break;
             case "Synchronize": //case中的字符串为接口，详细请看接口文档
               console.log('Synchronize',json_obj)
-              //SynchronizeDo(json_obj);
+              this._synchronizeDo(json_obj);
               break;
             case "InvoiceCheck":
               console.log(json_obj);
@@ -990,26 +1035,39 @@ export default {
       }
       //初始化模态框的显示内容
       this.loadingMessage = this.pageData.loading.initTitle
-     /* document.addEventListener('contextmenu',function (e) {
-        e.preventDefault()
-      })*/
+
+     //人工干预界面canvas自适应浏览器窗口大小
       window.onresize = (e) => {
         this.$nextTick(() => {
+          //干预页面canvas的窗口适应
           this._drawOcrCanvas ()
+          //局部canvas的窗口适应
+          const cutCanvas = document.getElementById('cut-canvas')
+          const canvasBox = this.$refs.canvasBox
+          const maxWidth = canvasBox.clientWidth - 50
+          cutCanvas.style.maxWidth = maxWidth+'px'
         })
       },
+        //退出右键菜单和重命名编辑模式
       document.onclick = (e) => {
         this.$nextTick(() => {
           this.isShowRightMenu = false
           this._resetEditMode ()
         })
       },
+      //禁止浏览器自带的鼠标右键事件，退出右键菜单和重命名编辑模式
       document.oncontextmenu = (e) => {
         e.preventDefault()
         this.$nextTick(()=>{
           this.isShowRightMenu = false
           this._resetEditMode ()
         })
+      },
+      //禁止鼠标滚轮+CTRL事件
+      document.onmousewheel = function (evt) {
+        var e = evt || window.event;
+        if(e.preventDefault && e.ctrlKey) e.preventDefault();
+        if(e.ctrlKey) e.returnValue = false;
       }
     },
     /*添加一级树*/
@@ -1104,10 +1162,6 @@ export default {
       console.log(data)
       if(data){
         if(data.RSPCODE === '0000'){
-          /*for(var s=0;s<nextBills.length;s++){
-            console.log('aaaaold'+s,nextBills[s],nextBills.length)
-            this.myTree.remove(nextBills[s])
-          }*/
           if(data.BATCH){
             const updateBills = data.BATCH
             if(this.scanType === '2'){
@@ -1219,12 +1273,33 @@ export default {
           this.importProgress = 100
           clearInterval(timer)
           let t = setTimeout(()=>{
+            //移除导入模态框
             this.showImportModel = false
+            //若影像树内容超出则创建滚动对象
+            this.$nextTick(()=>{
+              if(!this.imageScroll){
+                this.imageScroll = new BScroll('.img-tree',{
+                  scrollY: true,
+                  click: true,
+                  mouseWheel: {
+                    speed: 20,
+                    invert: false,
+                    easeTime: 300
+                  },
+                  bounce: false
+                })
+              }else {
+                this.imageScroll.refresh()
+              }
+
+            })
+            //若为批量扫描则执行查询分组操作
             if(this.scanType === '2' && this.refreshFlag){
               this.ws.send('QueryGroup')
             }
           },200)
         }else {
+          //刷新返回码为0002的时候显示导入进度
           if(data.RstCode == "0002"){
             this.importProgress = Math.round(data.Completed/(this.historyFiles.length + data.Total)*100)
           }
@@ -1238,11 +1313,25 @@ export default {
       this.ocrFiles = ocrFilesArr
       this.historyFiles = historyFilesArr
       this.allImageFiles = allFilesArr
-      //console.log(this.ocrFiles,this.historyFiles,this.allImportFiles)
+      console.log(this.ocrFiles,this.historyFiles,this.allImageFiles)
     },
     //导入接口函数
-    _importDo (data){
+    _importDo(data) {
       console.log('import',data)
+      if(data){
+        if(data.RstCode === "0000"){
+          if(data.Total > 0){
+            this.refreshFlag = true
+            this.showImportModel = true
+          }
+        }else{
+          this.isShowPrompt = true
+          this.promptMessage = data.RstMesg
+        }
+        this.ws.send("Refresh");//刷新接口"Refresh"
+      }
+    },
+    _scanDo(data) {
       if(data){
         if(data.RstCode === "0000"){
           if(data.Total > 0){
@@ -1516,22 +1605,35 @@ export default {
       }
     },
     _invoiceCheckDo(data) {
-      this.isShowPrompt = true
-      this.promptMessage = data.RstMesg
+      if(data.RstMesg){
+        this.isShowPrompt = true
+        this.promptMessage = data.RstMesg
+      }
+
+    },
+    _deleteOCRDo(data) {
+      if(data.RstMesg){
+        this.isShowPrompt = true
+        this.promptMessage = data.RstMesg
+      }
     },
     _getInfoDo(data) {
+      console.log(data.ocr)
       if(data){
-        console.log(data.Pattern)
         switch (data.Pattern){
           case 1:
             this.ocrPattern = '增值税专用发票'
             if(!this.pattern.pattern1){
               this.isPatternAllSelect = false
+            }else {
+              this.isPatternAllSelect = true
             }
             break
           case 2:
             if(!this.pattern.pattern2){
               this.isPatternAllSelect = false
+            }else {
+              this.isPatternAllSelect = true
             }
             this.ocrPattern = '增值税普通发票'
             break
@@ -1550,34 +1652,25 @@ export default {
           this.seller = ocrInfo.seller
           this.passwdInfo = ocrInfo.passwd
           this.details = ocrInfo.details
+          if(!this.detailInfo.length){
+            this.detailInfo = ocrInfo.details[0]
+          }
+          //明细下标置为0
+          this.detailIndex = 0
+          //双向绑定的干预信息置为空
+          this.infoManual = ''
           ocrImg.onload = ()=>{
-            this._drawOcrCanvas ()
+            this._drawOcrCanvas()
           }
           this.$nextTick(()=>{
-            this.infoScroll = new BScroll('.ocr-data',{
-              scrollY: true,
-              click: true,
-              mouseWheel: {
-                speed: 20,
-                invert: false,
-                easeTime: 300
-              },
-              bounce: false
-            })
-            this.infoTops = []
-            this.infoScrollY = 0
-            // 给滚动对象绑定scroll监听
-            this.infoScroll.on('scroll', ({x, y}) => {
-              console.log('scroll', x, y)
-              this.infoScrollY = Math.abs(y)
-            })
-            // 给滚动对象绑定scrollEnd监听
-            this.infoScroll.on('scrollEnd', ({x, y}) => {
-              console.log('scrollEnd', x, y)
-              this.infoScrollY = Math.abs(y)
-            })
+            //初始化滚动对象
+            this._initInfoScroll()
             //获取各项info的高度
             this._getInfoDataHeight()
+            //ocr人工校验
+            this._checkOcrInfo()
+            //局部canvas清空
+            this._clearCutCanvas()
           })
 
         }else {
@@ -1586,22 +1679,58 @@ export default {
         }
       }
     },
+    //初始化人工干预页面发票数据的滚动条
+    _initInfoScroll() {
+      if(!this.infoScroll){
+        this.infoScroll = new BScroll('.ocr-data',{
+          scrollY: true,
+          click: true,
+          mouseWheel: {
+            speed: 20,
+            invert: false,
+            easeTime: 300
+          },
+          bounce: false
+        })
+      }else {
+        this.infoScroll.refresh()
+      }
+
+      this.infoTops = []
+      this.infoScrollY = 0
+      // 给滚动对象绑定scroll监听
+      this.infoScroll.on('scroll', ({x, y}) => {
+        this.infoScrollY = Math.abs(y)
+      })
+      // 给滚动对象绑定scrollEnd监听
+      this.infoScroll.on('scrollEnd', ({x, y}) => {
+        this.infoScrollY = Math.abs(y)
+      })
+    },
+    //清空局部canvas
+    _clearCutCanvas() {
+      const cutCanvas = document.getElementById('cut-canvas')
+      const cutCtx = cutCanvas.getContext("2d")
+      cutCtx.clearRect(0,0,cutCanvas.width,cutCanvas.height)
+    },
+    _synchronizeDo(data) {
+      if(data.RstMesg){
+        this.isShowPrompt = true
+        this.promptMessage = data.RstMesg
+      }
+    },
     //人工干预页面主图canvas
     _drawOcrCanvas() {
-      this.$nextTick(()=>{
-        const ocrCanvas = document.getElementById('ocr-canvas')
-        const ctx = ocrCanvas.getContext("2d")
-        const ocrImgBox = this.$refs.ocrImgBox
-        const imgBoxWidth = ocrImgBox.clientWidth
-        const imgBoxHeight = ocrImgBox.clientHeight
-        const ocrImg = this.$refs.myOcrImg
-        const imgWidth = ocrImg.clientWidth
-        const imgHeight = ocrImg.clientHeight
-        ocrCanvas.setAttribute('width',imgWidth)
-        ocrCanvas.setAttribute('height',imgHeight)
-        ctx.drawImage(ocrImg,0,0,imgWidth,imgHeight)
-      })
-
+      this.ocrCanvas = document.getElementById('ocr-canvas')
+      this.ctx = this.ocrCanvas.getContext("2d")
+      const ocrImgBox = this.$refs.ocrImgBox
+      const ocrImg = this.$refs.myOcrImg
+      const imgWidth = ocrImg.clientWidth
+      const imgHeight = ocrImg.clientHeight
+      this.ocrCanvas.setAttribute('width',imgWidth*2)
+      this.ocrCanvas.setAttribute('height',imgHeight*2)
+      this.ctx.scale(2,2)
+      this.ctx.drawImage(ocrImg,0,0,imgWidth,imgHeight)
     },
     _getInfoDataHeight() {
       const tops = []
@@ -1725,7 +1854,6 @@ export default {
           }
         }
       }
-
     },
     //首页展示图上一张切换事件
     showPrevImg (e){
@@ -1738,7 +1866,9 @@ export default {
         this.myTree.setCurrentKey(prevNode.data.id)
         if(history === 0){
           this.mainImgSrc = imageServer + fullname + '?' + Date.now()
+          this.isGreyRotateBtn = false
         }else if(history === 1){
+          this.isGreyRotateBtn = true
           if(fullname.indexOf('.') === 0){
             const subName = fullname.substring(6)
             this.mainImgSrc = imageServer + subName + '?' + Date.now()
@@ -1765,8 +1895,10 @@ export default {
         const history = nextNode.data.myDefine.history
         this.myTree.setCurrentKey(nextNode.data.id)
         if(history === 0){
+          this.isGreyRotateBtn = false
           this.mainImgSrc = imageServer + fullname + '?' + Date.now()
         }else if(history === 1){
+          this.isGreyRotateBtn = true
           if(fullname.indexOf('.') === 0){
             const subName = fullname.substring(6)
             this.mainImgSrc = imageServer + subName + '?' + Date.now()
@@ -1794,7 +1926,7 @@ export default {
     },
     //当前树节点改变的点击事件
     currentNodeChange (data,node){
-      console.log(data.node)
+      console.log('changenode',data,node)
     },
     //改变当前设备
     changeDevice(e){
@@ -1835,10 +1967,57 @@ export default {
     },
     //扫描按钮点击事件
     scanHandler(e){
-      console.log(e)
+      const currentData = this.myTree.getCurrentNode()
+      const currentNode = this.myTree.getNode(currentData)
+      if(this.scanType === '1'){
+        //单扫根目录不支持存放扫描影像
+        if(currentData.id === '0'){
+          //跟节点images,待确定是否导入
+          //this.ws.send(`importfile&${currentData.label}`)
+          console.log('这是根目录')
+          this.$message({
+            message: '当前目录不支持扫描影像，请选择单据类型',
+            center:true,
+          });
+        }else {
+          if(this.scanWay === '1'){
+            if(currentData.myDefine){
+              const currentTitle = currentNode.parent.data.label
+              this.ws.send(`scan&0&${currentNode.parent.parent.data.label}/${currentNode.parent.data.label}`)
+              console.log(currentTitle)
+            }else {
+              this.ws.send(`scan&0&${currentNode.parent.data.label}/${currentData.label}`)
+            }
+          }else {
+            if(currentData.myDefine){
+              const currentTitle = currentNode.parent.data.label
+              this.ws.send(`scan&1&${currentNode.parent.parent.data.label}/${currentNode.parent.data.label}`)
+              console.log(currentTitle)
+            }else {
+              this.ws.send(`scan&1&${currentNode.parent.data.label}/${currentData.label}`)
+            }
+          }
+
+        }
+      }else if(this.scanType === '2'){
+        //scanWay=1是单面
+        if(this.scanWay === '1'){
+          this.ws.send('scan&0')
+        }else {
+          this.ws.send('scan&1')
+        }
+      }
+
+
+    },
+    //移动扫描按钮点击事件
+    phoneScanHandler(e){
+      this.isShowPrompt = true
+      this.promptMessage = this.pageData.prompt.mobilePrompt
     },
     //功能设置点击事件
     functionSet (e){
+      console.log('点击功能设置')
       this.isShowFunctionSettings = true
       //记录打开设置页面开关的状态，为取消事件使用
       this.oldFunSetUp.Rename = this.Rename
@@ -2140,6 +2319,7 @@ export default {
     },
     //右键干预分组
     rightIntervention() {
+      this.interventionInput = ''
       this.isInterventionDialog = true
       this.isShowDialog = true
       this.dialogTitle = this.pageData.dialog.interventionTitle
@@ -2297,9 +2477,9 @@ export default {
         this.currentItem = item
         this.currentInfoName = infoName
       }
-
       if(canvasInfo){
         const siteArr = canvasInfo.split(',')
+        ctx.clearRect(0,0,canvasBox.clientWidth,canvasBox.clientHeight)
         cutCanvas.setAttribute('width',siteArr[2])
         cutCanvas.setAttribute('height',siteArr[3])
         cutCanvas.style.maxWidth = maxWidth+'px'
@@ -2311,11 +2491,13 @@ export default {
       console.log('change',e.target.value)
       this.infoManual = e.target.value
       this._setOcrInfo()
+      this._checkOcrInfo()
     },
     //局部校验的输入改变事件
     checkInput(e) {
       console.log(e)
       this._setOcrInfo()
+      this._checkOcrInfo()
     },
     //修改ocr信息
     _setOcrInfo(){
@@ -2336,9 +2518,9 @@ export default {
       })
     },
     addDetails() {
-      const detailInfo = this.details[this.detailIndex]
+      let {detailInfo} = this
       let addDetail = []
-      console.log(detailInfo,typeof detailInfo)
+      console.log('hhhh',detailInfo)
       for(let i=0;i<detailInfo.length;i++){
         console.log(detailInfo[i])
         const info = detailInfo[i]
@@ -2359,7 +2541,20 @@ export default {
       this.details.push(addDetail)
     },
     reduceDetails() {
-      this.details.splice(this.detailIndex,1)
+      console.log('----',this.details)
+      if(this.details.length){
+        //this.details.splice(this.detailIndex,1)
+        console.log(this.details,this.detailIndex)
+        let detailsObj = {}
+        let details = []
+        details.push(computedInfo(this.details[this.detailIndex]))
+        detailsObj.details = details
+        console.log(`DeleteOCR&${this.currentOcrFullName}&${JSON.stringify(detailsObj)}`)
+        this.ws.send(`DeleteOCR&${this.currentOcrFullName}&${JSON.stringify(detailsObj)}`)
+        this.details.splice(this.detailIndex,1)
+        this.detailIndex = 0
+      }
+
     },
     switchInfoTab(index) {
       // 得到目标位置的top值
@@ -2371,6 +2566,7 @@ export default {
       //this.infoScroll.scrollTo(0, -top, 300)
       this.infoScroll.scrollTo(0,-top,300)
     },
+    //人工干预翻页功能
     ocrFirstPage() {
       const {turnOcrPageMessage,promptTitle,cancelSave,confirmSave} = this.pageData.ocr
       if(this.currentOcrIndex > 0){
@@ -2388,6 +2584,7 @@ export default {
         });
       }
     },
+    //人工干预翻页功能
     ocrPrevPage() {
       const {turnOcrPageMessage,promptTitle,cancelSave,confirmSave} = this.pageData.ocr
       if(this.currentOcrIndex > 0){
@@ -2405,6 +2602,7 @@ export default {
       }
 
     },
+    //人工干预翻页功能
     ocrNextPage() {
       const {turnOcrPageMessage,promptTitle,cancelSave,confirmSave} = this.pageData.ocr
       if(this.currentOcrIndex < this.ocrFiles.length - 1){
@@ -2421,6 +2619,7 @@ export default {
         });
       }
     },
+    //人工干预翻页功能
     ocrLastPage() {
       const {turnOcrPageMessage,promptTitle,cancelSave,confirmSave} = this.pageData.ocr
       if(this.currentOcrIndex < this.ocrFiles.length - 1){
@@ -2437,6 +2636,7 @@ export default {
         });
       }
     },
+    //提交干预后的OCR信息
     _commitOcr() {
       const {basicInfo,buyer,seller,passwdInfo,details} = this
       const info = computedInfo(basicInfo)
@@ -2463,6 +2663,368 @@ export default {
       console.log(`CommitOCR&${this.currentOcrFullName}&${JSON.stringify(commitObj)}`)
       this.ws.send(`CommitOCR&${this.currentOcrFullName}&${JSON.stringify(commitObj)}`)
 
+    },
+    nodeMouseEnter(data,$event) {
+      console.log('mouseenter',$event)
+      const tips = this.$refs.tips
+      if(data.myDefine){
+        const left = $event.clientX + 10
+        const top = $event.clientY + 5
+        this.isShowTips = true
+        console.log(tips)
+        tips.style.left = left + 'px'
+        tips.style.top = top + 'px'
+        if(data.myDefine.history){
+          this.tipsTitle = data.label + '[已上传]'
+        }else {
+          this.tipsTitle = data.label + '[未上传]'
+        }
+
+      }
+
+    },
+    nodeMouseLeave() {
+      console.log('mouseleave')
+      this.isShowTips = false
+    },
+    syncClickHandler(type) {
+      const sync = {}
+      if(type === 'buyer'){
+        sync[type] = computedInfo(this.buyer)
+      }else {
+        sync[type] = computedInfo(this.seller)
+      }
+      this.ws.send(`Synchronize&${JSON.stringify(sync)}`)
+    },
+    //计算图片被放大的区域的范围
+    _scaleGlassRectangle(point) {
+      this.originalRectangle.x = 2*point.x - this.originalRadius;
+      this.originalRectangle.y = 2*point.y - this.originalRadius;
+      this.originalRectangle.width = this.originalRadius * 2;
+      this.originalRectangle.height = this.originalRadius * 2;
+    },
+    //将鼠标事件中的位置转化为相对位置
+    _windowToCanvas(x, y) {
+      const ocrCanvas = document.getElementById('ocr-canvas')
+      const bbox = ocrCanvas.getBoundingClientRect();
+      return {x: x - bbox.left, y: y - bbox.top}
+    },
+    //人工干预canvas鼠标移动事件函数
+    showCanvasZoom(e) {
+      this.centerPoint = this._windowToCanvas(e.clientX, e.clientY)
+      this._drawOcrCanvas()
+      this._scaleGlassRectangle(this.centerPoint)
+      this._drawMagnifyingGlass()
+      console.log(this.centerPoint,this.originalRectangle,this.originalRadius,this.scale,this.scaleGlassRectangle)
+    },
+    //canvas绘画放大镜区域
+    _drawMagnifyingGlass() {
+      this.scaleGlassRectangle = {
+        x: this.centerPoint.x - this.originalRectangle.width * this.scale / 2,
+        y: this.centerPoint.y - this.originalRectangle.height * this.scale / 2,
+        width: this.originalRectangle.width * this.scale,
+        height: this.originalRectangle.height * this.scale
+      }
+      this.ctx.save();
+      this.ctx.beginPath();
+      this.ctx.arc(this.centerPoint.x, this.centerPoint.y, this.originalRadius, 0, Math.PI * 2, false);
+      this.ctx.clip();
+      this.ctx.drawImage(this.ocrCanvas,
+        this.originalRectangle.x, this.originalRectangle.y,
+        this.originalRectangle.width, this.originalRectangle.height,
+        this.scaleGlassRectangle.x, this.scaleGlassRectangle.y,
+        this.scaleGlassRectangle.width, this.scaleGlassRectangle.height
+      )
+      this.ctx.restore();
+      this.ctx.beginPath();
+      let gradient = this.ctx.createRadialGradient(
+        this.centerPoint.x, this.centerPoint.y, this.originalRadius - 5,
+        this.centerPoint.x, this.centerPoint.y, this.originalRadius);
+      gradient.addColorStop(0, 'rgba(0,0,0,0.2)');
+      gradient.addColorStop(0.80, 'silver');
+      gradient.addColorStop(0.90, 'silver');
+      gradient.addColorStop(1.0, 'rgba(150,150,150,0.9)');
+      this.ctx.strokeStyle = gradient;
+      this.ctx.lineWidth = 5;
+      this.ctx.arc(this.centerPoint.x, this.centerPoint.y, this.originalRadius, 0, Math.PI * 2, false);
+      this.ctx.stroke();
+    },
+    //人工干预canvas鼠标移出事件函数
+    hiddenCanvasZoom(e) {
+      this._drawOcrCanvas()
+    },
+    //人工干预页面关闭事件
+    closeOcrHandler() {
+      const {exitOcrMessage,promptTitle,cancelSave,confirmSave} = this.pageData.ocr
+      this.$confirm(exitOcrMessage, promptTitle, {
+        confirmButtonText: confirmSave,
+        cancelButtonText: cancelSave,
+      }).then(() => {
+        this._commitOcr()
+        this.isShowOcrInfo = false
+      }).catch(() => {
+        this.isShowOcrInfo = false
+      });
+    },
+    switchDetailPage(index) {
+      this.detailIndex = index
+      this.$nextTick(()=>{
+        this._checkOcrInfo()
+      })
+    },
+    _checkOcrInfo() {
+      let lowercase = getArrayKey(this.basicInfo,'lowercase').value
+      let sumTax = getArrayKey(this.basicInfo,'sumTax').value
+      let sumAmount = getArrayKey(this.basicInfo,'sumAmount').value
+      let uppercase = getArrayKey(this.basicInfo,'uppercase').value
+      let count = getArrayKey(this.details[this.detailIndex],'count').value
+      let price = getArrayKey(this.details[this.detailIndex],'price').value
+      let amount = getArrayKey(this.details[this.detailIndex],'amount').value
+      let rate = getArrayKey(this.details[this.detailIndex],'rate').value
+      let tax = getArrayKey(this.details[this.detailIndex],'tax').value
+      //判断小写金额，合计税额，合计金额都含有小数点，且小数点后位数一致
+      if(lowercase.indexOf('.') !== -1 && sumTax.indexOf('.') !== -1 && sumAmount.indexOf('.') !== -1 && (lowercase.split('.')[1].length === sumTax.split('.')[1].length) && (sumTax.split('.')[1].length === sumAmount.split('.')[1].length)){
+        //判断小写金额 = 合计税额 + 合计金额
+        if(parseFloat(lowercase) === parseFloat(sumTax) + parseFloat(sumAmount)){
+          this._lowerCaseRightCheck()
+        }else {
+          this._lowerCaseWrongCheck()
+        }
+      }else {
+        this._lowerCaseWrongCheck()
+      }
+      //判断大写金额的ocr校验
+      console.log(parseFloat(lowercase),convertCurrency(parseFloat(lowercase)))
+      if(lowercase.indexOf('.') !== -1 && convertCurrency(parseFloat(lowercase)) === uppercase){
+        this._upperCaseRightCheck()
+      }else {
+        this._upperCaseWrongCheck()
+      }
+      //判断明细区金额，总价和数量
+      if(parseFloat(price) && parseFloat(count) && parseFloat(amount)){
+        if(parseFloat(price).toFixed(2) === (parseFloat(amount)/parseFloat(count)).toFixed(2)){
+          this._amountRightCheck()
+        }else if(parseFloat(amount).toFixed(2) === (parseFloat(price)*parseFloat(count)).toFixed(2)){
+          this._amountRightCheck()
+        }else {
+          this._amountWrongCheck()
+        }
+      }else {
+        this._amountWrongCheck()
+      }
+      //判断明细区金额，税额和税率
+      if(parseFloat(rate) && parseFloat(tax) && parseFloat(amount)){
+        console.log(parseFloat(tax).toFixed(2),(parseFloat(rate)/100*parseFloat(amount)+0.001).toFixed(2))
+        if(parseFloat(tax).toFixed(2) === (parseFloat(rate)/100*parseFloat(amount)+0.001).toFixed(2)){
+          this._rateRightCheck()
+        }else {
+          this._rateWrongCheck()
+        }
+      }else {
+        this._rateWrongCheck()
+      }
+    },
+    //小写金额验证通过
+    _lowerCaseRightCheck() {
+      const lowercaseObj = this.$refs.lowercase
+      const sumTaxObj = this.$refs.sumTax
+      const sumAmountObj = this.$refs.sumAmount
+
+      lowercaseObj[0].querySelector('.check-right').style.display = 'inline'
+      sumTaxObj[0].querySelector('.check-right').style.display = 'inline'
+      sumAmountObj[0].querySelector('.check-right').style.display = 'inline'
+      lowercaseObj[0].querySelector('.check-wrong').style.display = 'none'
+      sumTaxObj[0].querySelector('.check-wrong').style.display = 'none'
+      sumAmountObj[0].querySelector('.check-wrong').style.display = 'none'
+    },
+    //小写金额验证不通过
+    _lowerCaseWrongCheck() {
+      const lowercaseObj = this.$refs.lowercase
+      const sumTaxObj = this.$refs.sumTax
+      const sumAmountObj = this.$refs.sumAmount
+
+      lowercaseObj[0].querySelector('.check-right').style.display = 'none'
+      sumTaxObj[0].querySelector('.check-right').style.display = 'none'
+      sumAmountObj[0].querySelector('.check-right').style.display = 'none'
+      lowercaseObj[0].querySelector('.check-wrong').style.display = 'inline'
+      sumTaxObj[0].querySelector('.check-wrong').style.display = 'inline'
+      sumAmountObj[0].querySelector('.check-wrong').style.display = 'inline'
+    },
+    //大写金额验证通过
+    _upperCaseRightCheck() {
+      const uppercaseObj = this.$refs.uppercase
+      uppercaseObj[0].querySelector('.check-right').style.display = 'inline'
+      uppercaseObj[0].querySelector('.check-wrong').style.display = 'none'
+    },
+    //大写金额验证通过
+    _upperCaseWrongCheck() {
+      const uppercaseObj = this.$refs.uppercase
+      uppercaseObj[0].querySelector('.check-right').style.display = 'none'
+      uppercaseObj[0].querySelector('.check-wrong').style.display = 'inline'
+    },
+    //明细区数量金额单价验证通过
+    _amountRightCheck() {
+      const amountObj = this.$refs.amount
+      const priceObj = this.$refs.price
+      const countObj = this.$refs.count
+
+      console.log(amountObj)
+      amountObj[0].querySelector('.check-right').style.display = 'inline'
+      priceObj[0].querySelector('.check-right').style.display = 'inline'
+      countObj[0].querySelector('.check-right').style.display = 'inline'
+      amountObj[0].querySelector('.check-wrong').style.display = 'none'
+      priceObj[0].querySelector('.check-wrong').style.display = 'none'
+      countObj[0].querySelector('.check-wrong').style.display = 'none'
+    },
+    //明细区数量金额单价验证不通过
+    _amountWrongCheck() {
+      const amountObj = this.$refs.amount
+      const priceObj = this.$refs.price
+      const countObj = this.$refs.count
+      console.log(amountObj)
+
+      amountObj[0].querySelector('.check-right').style.display = 'none'
+      priceObj[0].querySelector('.check-right').style.display = 'none'
+      countObj[0].querySelector('.check-right').style.display = 'none'
+      amountObj[0].querySelector('.check-wrong').style.display = 'inline'
+      priceObj[0].querySelector('.check-wrong').style.display = 'inline'
+      countObj[0].querySelector('.check-wrong').style.display = 'inline'
+    },
+    //明细区税额税率验证通过
+    _rateRightCheck() {
+      const rateObj = this.$refs.rate
+      const taxObj = this.$refs.tax
+
+      rateObj[0].querySelector('.check-right').style.display = 'inline'
+      taxObj[0].querySelector('.check-right').style.display = 'inline'
+      rateObj[0].querySelector('.check-wrong').style.display = 'none'
+      taxObj[0].querySelector('.check-wrong').style.display = 'none'
+    },
+    //明细区税额税率验证不通过
+    _rateWrongCheck() {
+      const rateObj = this.$refs.rate
+      const taxObj = this.$refs.tax
+
+      rateObj[0].querySelector('.check-right').style.display = 'none'
+      taxObj[0].querySelector('.check-right').style.display = 'none'
+      rateObj[0].querySelector('.check-wrong').style.display = 'inline'
+      taxObj[0].querySelector('.check-wrong').style.display = 'inline'
+    },
+    //缩略图按钮点击事件回调
+    thumbnailHandler() {
+      this.isShowThumbnail = true
+      this.$nextTick(()=>{
+        this._setThumbnailItem()
+        //添加滚动对象
+        if(!this.thumbnailScroll){
+          this.thumbnailScroll = new BScroll('.thumbnail-inner',{
+            scrollY: true,
+            click: true,
+            mouseWheel: {
+              speed: 20,
+              invert: false,
+              easeTime: 300
+            },
+            bounce: false
+          })
+        }else {
+          this.thumbnailScroll.refresh()
+        }
+
+      })
+    },
+    //缩略图界面ctrl+鼠标滚轮切换缩略图状态
+    doSomething(e) {
+      console.log(e)
+      if(e.ctrlKey){
+        if(e.deltaY<0){
+          //向上滑动，index-1
+          if(this.thumbnailIndex > 0){
+            this.thumbnailIndex--
+            this._setThumbnailItem()
+          }
+
+        }else if(e.deltaY>0) {
+          //向下滑动，index+1
+          if(this.thumbnailIndex < 5){
+            this.thumbnailIndex++
+            this._setThumbnailItem()
+          }
+        }
+      }
+    },
+    //设置缩略图的宽高
+    _setThumbnailItem() {
+      const thumbnailItem = this.$refs.thumbnailItem
+      const boxHeight = this.$refs.thumbnailBox.clientHeight
+      console.log(thumbnailItem,typeof thumbnailItem)
+      switch (this.thumbnailIndex){
+        case 0:
+          for(let i=0;i<thumbnailItem.length;i++){
+            thumbnailItem[i].style.width = '100%'
+            thumbnailItem[i].style.height = boxHeight + 'px'
+          }
+          break
+        case 1:
+          for(let i=0;i<thumbnailItem.length;i++){
+            thumbnailItem[i].style.width = '50%'
+            thumbnailItem[i].style.height = boxHeight + 'px'
+          }
+          break
+        case 2:
+          for(let i=0;i<thumbnailItem.length;i++){
+            thumbnailItem[i].style.width = '50%'
+            thumbnailItem[i].style.height =  boxHeight/2 + 'px'
+          }
+          break
+        case 3:
+          for(let i=0;i<thumbnailItem.length;i++){
+            thumbnailItem[i].style.width = '25%'
+            thumbnailItem[i].style.height = boxHeight/2 + 'px'
+          }
+          break
+        case 4:
+          for(let i=0;i<thumbnailItem.length;i++){
+            thumbnailItem[i].style.width = '25%'
+            thumbnailItem[i].style.height = boxHeight/4 + 'px'
+          }
+          break
+        case 5:
+          for(let i=0;i<thumbnailItem.length;i++){
+            thumbnailItem[i].style.width = '12.5%'
+            thumbnailItem[i].style.height = boxHeight/4 + 'px'
+          }
+          break
+      }
+    },
+    //点击切换缩略图
+    selectThumbnail(sid) {
+      console.log(sid,typeof sid)
+      this.isShowThumbnail = false
+      const key = sid.toString()
+      this.myTree.setCurrentKey(key)
+      const data = this.myTree.getCurrentNode()
+      if(data.myDefine){
+        if(data.myDefine.history === 0){
+          this.mainImgSrc = imageServer + data.myDefine.fullname + '?' + Date.now()
+          this.isGreyRotateBtn = false
+        }else if(data.myDefine.history === 1) {
+          if(data.myDefine.fullname.indexOf('.') === 0){
+            const subName = data.myDefine.fullname.substring(6)
+            this.mainImgSrc = imageServer + subName + '?' + Date.now()
+          }else {
+            this.mainImgSrc = data.myDefine.fullname + '?' + Date.now()
+          }
+          this.isGreyRotateBtn = true
+        }
+      }else {
+        this.mainImgSrc = ''
+        this.isGreyRotateBtn = true
+      }
+    },
+    //帮助按钮回调
+    helpHandler() {
+      window.open(`test3.html?languageIndex=${this.languageIndex}`,"_blank")
     }
   },
   computed: {
@@ -2472,9 +3034,9 @@ export default {
       const index = infoTops.findIndex((top, index) => {
         return (infoScrollY>top) && (infoScrollY<=infoTops[index+1])
       })
-      console.log(infoScrollY, infoTops,index)
+      //console.log(infoScrollY, infoTops,index)
       return index+1
-    }
+    },
 
   }
 }
@@ -2495,6 +3057,7 @@ export default {
       left 0px
       right 0px
       display flex
+      z-index 10
       .nav-tree
         width 20%
         height 100%
@@ -2515,9 +3078,9 @@ export default {
           .img-tree
             width 100%
             height 100%
-            padding 10px 0px
-            margin-bottom 10px
-            overflow-y auto
+            padding 0 10px
+            margin 10px 0
+            overflow hidden
             /*overflow-x hidden*/
             .el-tree
               background none
@@ -2527,6 +3090,7 @@ export default {
                 display none
               .is-current
                 &>.el-tree-node__content
+                  /*background-color rgba(110,130,190,1) !important*/
                   color #ffd450
               .el-tree-node
                 .custom-tree-node
@@ -2535,8 +3099,8 @@ export default {
                     vertical-align middle
                 .el-tree-node__content
                   background-color rgba(99,118,194,0)
-                  &:hover
-                    background-color rgba(99,118,194,0.5)
+                  /*&:hover
+                    background-color rgba(99,118,194,0.5)*/
       .main-con
         width 80%
         height 100%
@@ -2658,9 +3222,19 @@ export default {
       .menu-item
         padding 6px 10px
         &:hover
-          background-color rgba(60,110,180,1)
+          background-color rgba(70,110,180,1)
         .menu-title
           margin 0 10px
+    .tips
+      padding 5px
+      position absolute
+      left 0px
+      top 0px
+      background-color white
+      border-radius 5px
+      /*color white*/
+      font-size 12px
+      z-index 20
     .ocr-wrapper
       position fixed
       top 0
@@ -2673,6 +3247,11 @@ export default {
       z-index 20
       padding 10px 10px
       /*display none*/
+      transform scale(1)
+      &.fadeOcr-enter-active, &.fadeOcr-leave-active
+        transition: all .5s
+      &.fadeOcr-enter, &.fadeOcr-leave-to
+        transform scale(0)
       .ocr-con
         position absolute
         left 50px
@@ -2702,8 +3281,11 @@ export default {
               max-width 100%
               opacity 0
             #ocr-canvas
-              /*display none*/
               position absolute
+              left 50%
+              top 50%
+              transform translate(-50%,-50%)
+              z-index 25
               max-height 100%
               max-width 100%
           .img-cut
@@ -2895,8 +3477,12 @@ export default {
                 right 0px
                 top 50%
                 transform translateY(-50%)
+                display flex
+                flex-direction column
+                color white
                 >img
                   width 30px
+                  margin-bottom 7px
               .detail-btn
                 width 100%
                 padding 0px 10px 10px 0px
@@ -2941,7 +3527,7 @@ export default {
             align-items center
             position absolute
             left 0px
-            opacity .5
+            opacity .7
             background-size:cover
             >div
               width 15px
@@ -2971,7 +3557,11 @@ export default {
       height 100%
       background-color rgba(0,0,0,.6)
       z-index 20
-      display none
+      transform scale(1)
+      &.fadeThumbnail-enter-active, &.fadeThumbnail-leave-active
+        transition: all .5s
+      &.fadeThumbnail-enter, &.fadeThumbnail-leave-to
+        transform scale(0)
       .thumbnail-inner
         position absolute
         left 20px
@@ -2979,9 +3569,9 @@ export default {
         bottom 20px
         right 30px
         background-image url("../../assets/img/images/background/bg1.png")
-        overflow auto
+        overflow hidden
         .thumbnail-list
-          padding-right 40px
+          padding-right 30px
           display flex
           flex-wrap wrap
           .thumbnail-item
@@ -2991,7 +3581,8 @@ export default {
             justify-content center
             align-items center
             >img
-              width 100%
+              max-width 100%
+              max-height 100%
               transition all 1s
               &:hover
                 box-shadow 1px -1px 30px 1px #eee
@@ -3011,8 +3602,9 @@ export default {
             margin-top 10px
             width 100%
             height 100%
-            display flex
+            /*display flex*/
             flex-direction column
+            display none
             .tab-item
               font-size 16px
               text-align center
@@ -3037,18 +3629,31 @@ export default {
                 font-size 22px
               opacity 1
     .my-model
-      position fixed
-      left 0px
-      top 0px
-      width 100%
-      height 100%
-      background-color rgba(0,0,0,.6)
+      .mask
+        position absolute
+        width 100%
+        height 100%
+        top 0
+        left 0
+        background-color rgba(0, 0, 0, .5)
+        z-index 21
+        opacity 1
+        &.fade-enter-active, &.fade-leave-active
+          transition: all .5s
+        &.fade-enter, &.fade-leave-to
+          opacity 0
       .model-inner
         position absolute
-        top: 50%
         left 50%
+        top 50%
         transform translate(-50%,-50%)
         text-align center
+        z-index 23
+        &.move-enter-active, &.move-leave-active
+          transition all .5s
+        &.move-enter, &.move-leave-to
+          opacity 0
+          transform translate(-50%,-80%)
         .setting-footer
           padding 15px
           .el-row
@@ -3071,29 +3676,27 @@ export default {
               color #999
               font-size 12px
               font-weight 900
-            &:hover
-              transform scale(1.5)
           >.iconfont
             color #428bca
             font-size 20px
           >h4
             font-weight 600
       &.import-model
-        z-index 40
+        .mask
+          z-index 41
         .import-inner
+          z-index 42
           width 60%
           line-height 80px
           color white
           font-size 16px
       &.function-setting
-        z-index 20
         .function-setting-inner
           width 560px
-          height 425px
           background white
-          color black
           border-radius 15px
           .function-setting-body
+            color #444
             padding 0 20px
             border-bottom 1px solid #e5e5e5
             .select-type
@@ -3117,13 +3720,17 @@ export default {
                     margin-right 15px
 
       &.scan-setting
-        z-index 20
+        opacity 1
+        &.fadeScanSet-enter-active, &.fadeScanSet-leave-active
+          transition: all .5s
+        &.fadeScanSet-enter, &.fadeScanSet-leave-to
+          opacity 0
         .scan-setting-inner
           width 560px
           background-color white
-          color black
           border-radius 15px
           .scan-body
+            color #444
             .scan-option
               padding 15px
               border-bottom 1px solid #e5e5e5
@@ -3140,7 +3747,6 @@ export default {
               .el-radio__label
                 font-size 16px
       &.ocr-setting
-        z-index 20
         .ocr-setting-inner
           width 860px
           display flex
@@ -3178,13 +3784,17 @@ export default {
                 >img
                   width 720px
       &.is-loading
-        z-index 40
-        .title
-          font-size 16px
-          color white
+        color white
+        .loading-inner
+          z-index 42
+          .title
+            font-size 16px
+            color white
+        .mask
+          z-index 41
       &.dialog-box
-        z-index 888
         .dialog-inner
+          z-index 8002
           width 50%
           background-color white
           border-radius 15px
@@ -3197,25 +3807,25 @@ export default {
               color #555
               border 1px solid #ccc
               border-radius 4px
-            .title
-              color #333
-              font-size 15px
+              .title
+                color #333
+                font-size 15px
             .intervention-box
-              text-align center
-              font-size 14px
+              font-size 15px
               >input
                 border 1px solid #ddd
-              .original-tips
-                color black
+                padding 2px 4px
               .continue-tips
-                color yellow
+                color #ffd450
               .right-tips
-                color yellowgreen
+                color green
               .wrong-tips
                 color red
+        .mask
+          z-index 8001
       &.confirm-box
-        z-index 40
         .confirm-inner
+          z-index 42
           width 50%
           background-color white
           border-radius 15px
@@ -3225,9 +3835,11 @@ export default {
             .title
               color #333
               font-size 15px
+        .mask
+          z-index 41
       &.prompt-box
-        z-index 40
         .prompt-inner
+          z-index 42
           width 50%
           background-color white
           border-radius 15px
@@ -3237,4 +3849,7 @@ export default {
               color #333
               font-size 15px
               line-height 25px
+        .mask
+          z-index 41
+
 </style>
